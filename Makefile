@@ -1,10 +1,17 @@
 BUILD_DIR := build
+LIB_DIRS := lib
+OUTPUT_NAME := owls_never_quit
 MOD_TOML := mod.toml
 
 CC      := clang
 LD      := ld.lld
 MOD_TOOL := ./RecompModTool
+OFFLINE_RECOMP := ./OfflineModRecomp
 TARGET  := $(BUILD_DIR)/mod.elf
+MANIFEST := $(wildcard $(OUTPUT_NAME)/$(OUTPUT_NAME)*.nrm)
+OUTPUT_NAME_W_VER := $(notdir $(MANIFEST:.nrm=))
+
+LIBFILES := $(foreach ld, $(LIB_DIRS), $(wildcard $(ld)/*.dll))
 
 LDSCRIPT := mod.ld
 CFLAGS   := -target mips -mips2 -mabi=32 -O2 -G0 -mno-abicalls -mno-odd-spreg -mno-check-zero-division \
@@ -19,11 +26,23 @@ C_OBJS := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.o))
 C_DEPS := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.d))
 
 
+$(OUTPUT_NAME)/mod_binary.bin: $(TARGET) $(MOD_TOML) $(LIBFILES) | $(OUTPUT_NAME)
+	$(MOD_TOOL) $(MOD_TOML) $(OUTPUT_NAME)
+
 ifeq ($(OS),Windows_NT)
 
 define make_folder
 	mkdir $(subst /,\,$(1))
 endef
+
+$(OUTPUT_NAME)/$(OUTPUT_NAME_W_VER).dll: build/mod_recompiled.c
+ifeq ($(MANIFEST),)
+	@$(MAKE) offline --no-print-directory
+else
+	clang-cl build/mod_recompiled.c -Wno-macro-redefined -fuse-ld=lld -Z7 /Ioffline_build -MD -O2 /link /DLL /OUT:$@
+endif
+
+offline: $(OUTPUT_NAME)/$(OUTPUT_NAME_W_VER).dll
 
 else
 
@@ -31,11 +50,23 @@ define make_folder
 	mkdir -p $(1)
 endef
 
+$(OUTPUT_NAME)/$(OUTPUT_NAME_W_VER).so: build/mod_recompiled.c
+ifeq ($(MANIFEST),)
+	@$(MAKE) offline --no-print-directory
+else
+	clang build/mod_recompiled.c -Wno-macro-redefined -shared -fvisibility=hidden -fPIC -O2 -Ioffline_build -o $@
+endif
+
+offline: $(OUTPUT_NAME)/$(OUTPUT_NAME_W_VER).so
+
 endif
 
 
-$(BUILD_DIR)/mod_binary.bin: $(TARGET) $(MOD_TOML) | $(BUILD_DIR)
-	$(MOD_TOOL) $(MOD_TOML) $(BUILD_DIR)
+build/mod_recompiled.c: $(OUTPUT_NAME)/mod_binary.bin
+	$(OFFLINE_RECOMP) $(OUTPUT_NAME)/mod_syms.bin $(OUTPUT_NAME)/mod_binary.bin Zelda64RecompSyms/mm.us.rev1.syms.toml $@
+
+$(OUTPUT_NAME):
+	$(call make_folder, $@)
 
 $(TARGET): $(C_OBJS) $(LDSCRIPT) | $(BUILD_DIR)
 	$(LD) $(C_OBJS) $(LDFLAGS) -o $@
@@ -47,7 +78,7 @@ $(C_OBJS): $(BUILD_DIR)/%.o : %.c | $(BUILD_DIR) $(BUILD_DIR)/src
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -MMD -MF $(@:.o=.d) -c -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(OUTPUT_NAME)
 
 -include $(C_DEPS)
 
