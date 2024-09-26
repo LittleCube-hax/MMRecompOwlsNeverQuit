@@ -31,7 +31,7 @@ void owls_never_quit(ObjWarpstone* this, PlayState* play)
     }
 }
 
-RECOMP_CALLBACK("*", recomp_on_owl_save)
+RECOMP_CALLBACK("*", recomp_on_play_main)
 void and_never_will(ObjWarpstone* this, PlayState* play)
 {
     recomp_set_owls_quit_game(false);
