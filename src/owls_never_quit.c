@@ -19,8 +19,15 @@ void Owl_Save(PlayState* play) {
     gSaveContext.save.isOwlSave = false;
 }
 
+RECOMP_CALLBACK("*", recomp_on_init)
+void owls_never_quit()
+{
+    recomp_set_owls_quit_game(false);
+    recomp_set_owl_saves_delete(false);
+}
+
 RECOMP_CALLBACK("*", recomp_on_owl_update)
-void owls_never_quit(ObjWarpstone* this, PlayState* play)
+void and_never_will(ObjWarpstone* this, PlayState* play)
 {
     if (this->isTalking && play->msgCtx.currentTextId == 0xC01 && play->msgCtx.msgBufPos == 269) {
         // @onq Skip the text about quitting the game.
@@ -29,13 +36,6 @@ void owls_never_quit(ObjWarpstone* this, PlayState* play)
             play->msgCtx.font.msgBuf.schar[569 + i] = play->msgCtx.font.msgBuf.schar[588 + i];
         }
     }
-}
-
-RECOMP_CALLBACK("*", recomp_on_play_main)
-void and_never_will(ObjWarpstone* this, PlayState* play)
-{
-    recomp_set_owls_quit_game(false);
-    recomp_set_owl_saves_delete(false);
 }
 
 RECOMP_CALLBACK("*", recomp_after_owl_save)
