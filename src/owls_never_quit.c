@@ -2,8 +2,8 @@
 #include "global.h"
 #include "overlays/actors/ovl_Obj_Warpstone/z_obj_warpstone.h"
 
-RECOMP_IMPORT("*", void recomp_set_owl_saves_delete(bool new_val));
-RECOMP_IMPORT("*", void recomp_set_owls_quit_game(bool new_val));
+RECOMP_IMPORT("*", void recomp_set_loading_deletes_owl_save(bool new_val));
+RECOMP_IMPORT("*", void recomp_set_owls_save_and_quit(bool new_val));
 
 void Owl_Save(PlayState* play) {
     play->state.unk_A3 = 1;
@@ -22,8 +22,8 @@ void Owl_Save(PlayState* play) {
 RECOMP_CALLBACK("*", recomp_on_init)
 void owls_never_quit()
 {
-    recomp_set_owls_quit_game(false);
-    recomp_set_owl_saves_delete(false);
+    recomp_set_loading_deletes_owl_save(false);
+    recomp_set_owls_save_and_quit(false);
 }
 
 RECOMP_CALLBACK("*", recomp_on_owl_update)
